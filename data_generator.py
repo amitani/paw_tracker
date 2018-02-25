@@ -38,10 +38,6 @@ class DataGenerator:
                     ids_train_batch = self.index_list[start:end]
                     for id in ids_train_batch:
                         x, y = read(id[0],id[1])
-#                        img = randomHueSaturationValue(img,
-#                                                       hue_shift_limit=(-50, 50),
-#                                                       sat_shift_limit=(-5, 5),
-#                                                       val_shift_limit=(-15, 15))
 #                        img, mask = randomShiftScaleRotate(img, mask,
 #                                                           shift_limit=(-0.0625, 0.0625),
 #                                                           scale_limit=(-0.1, 0.1),
