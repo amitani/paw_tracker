@@ -29,26 +29,78 @@ class DataGenerator:
         self.index_list = index_list
         self.batch_size = batch_size
         self.params = params
+        self.params = {'angle':5,'scale':0.1,'aspect':0.1,'shift':0.1}
+    def getRandomTransform(self, width, height):
+        if not self.params:
+            return []
+        if 'angle' in self.params:
+            angle_limit = self.params['angle']
+        else:
+            angle_limit = 0
+        if 'scale' in self.params:
+            scale_limit = self.params['scale']
+        else:
+            scale_limit = 0
+        if 'aspect' in self.params:
+            aspect_limit = self.params['aspect']
+        else:
+            aspect_limit = 0
+        if 'shift' in self.params:
+            shift_limit = self.params['shift']
+        else:
+            shift_limit = 0
+
+        angle = self.rg.uniform(-angle_limit, angle_limit) # degree
+        scale = self.rg.uniform(1 - scale_limit, 1 + scale_limit)
+        aspect = self.rg.uniform(1 - aspect_limit, 1 + aspect_limit)
+        sx = scale * aspect / (aspect ** 0.5)
+        sy = scale / (aspect ** 0.5)
+        dx = round(self.rg.uniform(-shift_limit, shift_limit) * width)
+        dy = round(self.rg.uniform(-shift_limit, shift_limit) * height)
+
+        cc = np.math.cos(angle / 180 * np.math.pi) * sx
+        ss = np.math.sin(angle / 180 * np.math.pi) * sy
+        rotate_matrix = np.array([[cc, -ss], [ss, cc]])
+
+        box0 = np.array([[0, 0], [width, 0], [width, height], [0, height], ])
+        box1 = box0 - np.array([width / 2, height / 2])
+        box1 = np.dot(box1, rotate_matrix.T) + np.array([width / 2 + dx, height / 2 + dy])
+
+        box0 = box0.astype(np.float32)
+        box1 = box1.astype(np.float32)
+        mat = cv2.getPerspectiveTransform(box0, box1)
+
+        return mat
+
     def generator(self):
         while True:
-                for start in range(0, len(self.index_list), self.batch_size):
-                    x_batch = []
-                    y_batch = []
-                    end = min(start + self.batch_size, len(self.index_list))
-                    ids_train_batch = self.index_list[start:end]
-                    for id in ids_train_batch:
-                        x, y = read(id[0],id[1])
-#                        img, mask = randomShiftScaleRotate(img, mask,
-#                                                           shift_limit=(-0.0625, 0.0625),
-#                                                           scale_limit=(-0.1, 0.1),
-#                                                           rotate_limit=(-0, 0))
-#                        img, mask = randomHorizontalFlip(img, mask)
-#                        mask = np.expand_dims(mask, axis=2)
-                        x_batch.append(x)
-                        y_batch.append(y)
-                    x_batch = np.array(x_batch, np.float32) / 255
-                    y_batch = np.array(y_batch)
-                    yield x_batch, y_batch
+            self.rg.shuffle(self.index_list)
+            for start in range(0, len(self.index_list), self.batch_size):
+                x_batch = []
+                y_batch = []
+                end = min(start + self.batch_size, len(self.index_list))
+                ids_train_batch = self.index_list[start:end]
+                for id in ids_train_batch:
+                    x, y = read(id[0],id[1])
+                    mat = self.getRandomTransform(x.shape[1],x.shape[0])
+                    if len(mat)!=0 :
+                        #print(mat)
+                        #print(y)
+                        x = cv2.warpPerspective(x, mat, (x.shape[1], x.shape[0]),
+                            flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT,
+                            borderValue=(0, 0, 0))
+                        y_tmp = np.ones((3,1))
+                        y_tmp[0,0] = y[0]
+                        y_tmp[1,0] = y[1]
+                        y_tmp = np.dot(mat,y_tmp)
+                        y[0] = y_tmp[0,0]/y_tmp[2,0]
+                        y[1] = y_tmp[1,0]/y_tmp[2,0]
+                        #print(y)
+                    x_batch.append(x)
+                    y_batch.append(y)
+                x_batch = np.array(x_batch, np.float32) / 255
+                y_batch = np.array(y_batch)
+                yield x_batch, y_batch
 
 if __name__ == '__main__':
     i_file = 0
@@ -66,5 +118,5 @@ if __name__ == '__main__':
         img = cv2.circle(x,(yi[0],yi[1]),5,(255,0,0));
         #print(x)
         cv2.imshow('image',img)
-        cv2.waitKey(30)
+        cv2.waitKey(300)
     cv2.destroyAllWindows()
