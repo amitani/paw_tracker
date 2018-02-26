@@ -28,8 +28,8 @@ def read(i_file, i_frame):
     return (x,y)
 
 class DataGenerator:
-    rg = np.random.RandomState(47)
     def __init__(self, index_list, batch_size, params = []):
+        self.rg = np.random.RandomState(47)
         self.index_list = index_list
         self.batch_size = batch_size
         self.params = params
@@ -103,9 +103,11 @@ class DataGenerator:
                             #print(y)
                         x_batch.append(x)
                         y_batch.append(y)
-                    x_batch = np.array(x_batch, np.float32) / 255
+                    x_batch = np.array(x_batch, np.float32) / 256
                     x_batch = x_batch[:,8:-8,16:-16,np.newaxis]
-                    y_batch = np.array(y_batch) - np.array([[16, 8]])
+                    x_batch = np.repeat(x_batch, 3, axis=3)
+                    y_batch = np.array(y_batch) - np.array([[160, 80]]) # from center
+                    y_batch = y_batch
                     yield x_batch, y_batch
         return generator
 
@@ -123,7 +125,7 @@ if __name__ == '__main__':
         y = y[0,:]
         #print(y)
         yi = np.round(y).astype(np.int)
-        img = cv2.circle(x,(yi[0],yi[1]),5,(0,0,0));
+        img = cv2.circle(x,(yi[0]+144,yi[1]+72),5,(0,0,0));
         #print(x)
         cv2.imshow('image',img)
         cv2.waitKey(300)

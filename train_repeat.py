@@ -36,6 +36,8 @@ def data():
         for j in range(0,frames[i]):
             idx_test.append([i, j])
     print('prepared data')
+    print('training on ', len(idx_train), ' samples')
+    print('testing on ', len(idx_test), ' samples')
     return idx_train, idx_test
 
 def create_model(idx_train, idx_test):
@@ -53,8 +55,8 @@ def create_model(idx_train, idx_test):
     vgg = VGG16(False)
     #pop_layers = {{choice([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10])}}
     #trainable_layers = {{choice([0, 1, 2, 3, 4, 5])}}
-    pop_layers = {{choice([5])}}
-    trainable_layers = {{choice([2])}}
+    pop_layers = 5
+    trainable_layers = 2
     print(pop_layers)
     print(trainable_layers)
     for i in range(0,pop_layers):
@@ -76,16 +78,16 @@ def create_model(idx_train, idx_test):
 #    model.layers[1].trainable = False
 
     #lr_e = {{uniform(-6,-4)}}
-    lr_e = {{uniform(-4,-4)}}
+    lr_e = -4
     print(lr_e)
     #optim = {{choice([RMSprop, Adam, SGD])}}(lr = 10**lr_e);
-    optim = {{choice([RMSprop])}}(lr = 10**lr_e);
+    optim = RMSprop(lr = 10**lr_e);
     print(optim)
     model.compile(loss='mse', metrics=[],
                   optimizer=optim)
 
     #batch_size={{choice([32, 64, 128])}}
-    batch_size={{choice([128])}}
+    batch_size=128
     train_generator = DataGenerator(idx_train,batch_size,
         params = [])
         #params = {'angle':10,'scale':0.05,'aspect':0.05,'shift':0.05})
@@ -103,10 +105,9 @@ def create_model(idx_train, idx_test):
 
 
 if __name__ == '__main__':
-    best_run, best_model = optim.minimize(model=create_model,
-                                          data=data,
-                                          algo=tpe.suggest,
-                                          max_evals=20,
-                                          trials=Trials())
-    best_model.summary()
-    print('Best run:', best_run)
+    idx_train, idx_test = data()
+    print( create_model(idx_train, idx_test))
+    print( create_model(idx_train, idx_test))
+    print( create_model(idx_train, idx_test))
+    print( create_model(idx_train, idx_test))
+    print( create_model(idx_train, idx_test))
