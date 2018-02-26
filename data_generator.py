@@ -30,10 +30,9 @@ def read(i_file, i_frame):
 class DataGenerator:
     def __init__(self, index_list, batch_size, params = []):
         self.rg = np.random.RandomState(47)
-        self.index_list = index_list
+        self.index_list = index_list[:]
         self.batch_size = batch_size
         self.params = params
-        self.params = {'angle':2,'scale':0.05,'aspect':0.05,'shift':0.05}
     def getRandomTransform(self, width, height):
         if not self.params:
             return []
