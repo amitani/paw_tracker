@@ -51,10 +51,10 @@ def create_model(idx_train, idx_test):
     """
 
     vgg = VGG16(False)
-    #pop_layers = {{choice([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10])}}
-    #trainable_layers = {{choice([0, 1, 2, 3, 4, 5])}}
-    pop_layers = {{choice([5])}}
-    trainable_layers = {{choice([2])}}
+    pop_layers = {{choice([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10])}}
+    trainable_layers = {{choice([0, 1, 2, 3, 4, 5])}}
+    #pop_layers = {{choice([5])}}
+    #trainable_layers = {{choice([2])}}
     print(pop_layers)
     print(trainable_layers)
     for i in range(0,pop_layers):
@@ -73,22 +73,25 @@ def create_model(idx_train, idx_test):
     x = Dense(2,activation = 'linear')(x)
     model = Model(input=inputs,output=x)
     model.summary()
-#    model.layers[1].trainable = False
 
-    #lr_e = {{uniform(-6,-4)}}
-    lr_e = {{uniform(-4,-4)}}
-    print(lr_e)
-    #optim = {{choice([RMSprop, Adam, SGD])}}(lr = 10**lr_e);
-    optim = {{choice([RMSprop])}}(lr = 10**lr_e);
+    lr = {{choice([1E-4, 5E-5, 2E-5, 1E-5, 5E-6, 2E-6, 1E-6])}}
+    #lr_e = {{uniform(-4,-4)}}
+    print(lr)
+    optim = {{choice([RMSprop, Adam, SGD])}}(lr = lr);
+    #optim = {{choice([RMSprop])}}(lr = 10**lr_e);
     print(optim)
     model.compile(loss='mse', metrics=[],
                   optimizer=optim)
 
-    #batch_size={{choice([32, 64, 128])}}
-    batch_size={{choice([128])}}
+    batch_size={{choice([32, 64, 128])}}
+    #batch_size={{choice([128])}}
+    to_aug = {{choice([True, False])}}
+    if to_aug:
+        aug_param = {'angle':10,'scale':0.05,'aspect':0.05,'shift':0.05}
+    else:
+        aug_param = []
     train_generator = DataGenerator(idx_train,batch_size,
-        params = [])
-        #params = {'angle':10,'scale':0.05,'aspect':0.05,'shift':0.05})
+        params = aug_param)
     test_generator = DataGenerator(idx_test,batch_size,
         params = [])
     train_steps = np.ceil(len(idx_train)/batch_size)

@@ -88,16 +88,20 @@ def create_model(idx_train, idx_test):
 
     #batch_size={{choice([32, 64, 128])}}
     batch_size=128
+    to_aug = True
+    if to_aug:
+        aug_param = {'angle':10,'scale':0.05,'aspect':0.05,'shift':0.05}
+    else:
+        aug_param = []
     train_generator = DataGenerator(idx_train,batch_size,
-        params = [])
-        #params = {'angle':10,'scale':0.05,'aspect':0.05,'shift':0.05})
+        params = aug_param)
     test_generator = DataGenerator(idx_test,batch_size,
         params = [])
     train_steps = np.ceil(len(idx_train)/batch_size)
     test_steps = np.ceil(len(idx_test)/batch_size)
     model.fit_generator(train_generator.get_generator()(),
             steps_per_epoch = train_steps,
-            epochs=10, verbose=1)
+            epochs=10, verbose=2)
     score = model.evaluate_generator(test_generator.get_generator()(),
             steps = test_steps)
     print('Test score:', score)

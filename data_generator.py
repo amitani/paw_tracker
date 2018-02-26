@@ -80,33 +80,36 @@ class DataGenerator:
             while True:
                 self.rg.shuffle(self.index_list)
                 for start in range(0, len(self.index_list), self.batch_size):
-                    x_batch = []
-                    y_batch = []
+                    x_batch_list = []
+                    y_batch_list = []
                     end = min(start + self.batch_size, len(self.index_list))
                     ids_train_batch = self.index_list[start:end]
                     for id in ids_train_batch:
                         x, y = read(id[0],id[1])
                         mat = self.getRandomTransform(x.shape[1],x.shape[0])
+                        #print(mat)
                         if len(mat)!=0 :
                             #print(mat)
                             #print(y)
-                            x = cv2.warpPerspective(x, mat, (x.shape[1], x.shape[0]),
+                            x2 = cv2.warpPerspective(x, mat, (x.shape[1], x.shape[0]),
                                 flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT,
                                 borderValue=(0, 0, 0))
                             y_tmp = np.ones((3,1))
                             y_tmp[0,0] = y[0]
                             y_tmp[1,0] = y[1]
                             y_tmp = np.dot(mat,y_tmp)
-                            y[0] = y_tmp[0,0]/y_tmp[2,0]
-                            y[1] = y_tmp[1,0]/y_tmp[2,0]
-                            #print(y)
-                        x_batch.append(x)
-                        y_batch.append(y)
-                    x_batch = np.array(x_batch, np.float32) / 256
+                            y2 = np.ones((2))
+                            y2[0] = y_tmp[0,0]/y_tmp[2,0]
+                            y2[1] = y_tmp[1,0]/y_tmp[2,0]
+                        else:
+                            x2 = np.copy(x)
+                            y2 = np.copy(y)
+                        x_batch_list.append(x2)
+                        y_batch_list.append(y2)
+                    x_batch = np.array(x_batch_list, np.float32) / 256
                     x_batch = x_batch[:,8:-8,16:-16,np.newaxis]
                     x_batch = np.repeat(x_batch, 3, axis=3)
-                    y_batch = np.array(y_batch) - np.array([[160, 80]]) # from center
-                    y_batch = y_batch
+                    y_batch = np.array(y_batch_list) - np.array([[160, 80]]) # from center
                     yield x_batch, y_batch
         return generator
 
