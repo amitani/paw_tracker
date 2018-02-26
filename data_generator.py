@@ -9,9 +9,13 @@ for i, fn_mat in enumerate(sorted(glob.glob('./Aki/LeftPawManual*.mat'))):
     fn_bin = fn_mat[:-3]+'bin'
     fn_npy = fn_mat[:-3]+'npy'
 
-files = [open(fn_mat[:-3]+'bin','rb') for x in sorted(glob.glob('./Aki/LeftPawManual*.mat'))]
-npys = [np.load(fn_mat[:-3]+'npy') for x in sorted(glob.glob('./Aki/LeftPawManual*.mat'))]
+files = [open(fn_mat[:-3]+'bin','rb') for fn_mat in sorted(glob.glob('./Aki/LeftPawManual*.mat'))]
+npys = [np.load(fn_mat[:-3]+'npy') for fn_mat in sorted(glob.glob('./Aki/LeftPawManual*.mat'))]
 frames = [x.shape[0] for x in npys]
+
+for i, fn in enumerate(sorted(glob.glob('./Aki/LeftPawManual*.mat'))):
+    print(fn)
+    print(frames[i])
 
 size_x = 320
 size_y = 160
@@ -29,7 +33,7 @@ class DataGenerator:
         self.index_list = index_list
         self.batch_size = batch_size
         self.params = params
-        self.params = {'angle':5,'scale':0.1,'aspect':0.1,'shift':0.1}
+        self.params = {'angle':2,'scale':0.05,'aspect':0.05,'shift':0.05}
     def getRandomTransform(self, width, height):
         if not self.params:
             return []
@@ -72,50 +76,54 @@ class DataGenerator:
 
         return mat
 
-    def generator(self):
-        while True:
-            self.rg.shuffle(self.index_list)
-            for start in range(0, len(self.index_list), self.batch_size):
-                x_batch = []
-                y_batch = []
-                end = min(start + self.batch_size, len(self.index_list))
-                ids_train_batch = self.index_list[start:end]
-                for id in ids_train_batch:
-                    x, y = read(id[0],id[1])
-                    mat = self.getRandomTransform(x.shape[1],x.shape[0])
-                    if len(mat)!=0 :
-                        #print(mat)
-                        #print(y)
-                        x = cv2.warpPerspective(x, mat, (x.shape[1], x.shape[0]),
-                            flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT,
-                            borderValue=(0, 0, 0))
-                        y_tmp = np.ones((3,1))
-                        y_tmp[0,0] = y[0]
-                        y_tmp[1,0] = y[1]
-                        y_tmp = np.dot(mat,y_tmp)
-                        y[0] = y_tmp[0,0]/y_tmp[2,0]
-                        y[1] = y_tmp[1,0]/y_tmp[2,0]
-                        #print(y)
-                    x_batch.append(x)
-                    y_batch.append(y)
-                x_batch = np.array(x_batch, np.float32) / 255
-                y_batch = np.array(y_batch)
-                yield x_batch, y_batch
+    def get_generator(self):
+        def generator():
+            while True:
+                self.rg.shuffle(self.index_list)
+                for start in range(0, len(self.index_list), self.batch_size):
+                    x_batch = []
+                    y_batch = []
+                    end = min(start + self.batch_size, len(self.index_list))
+                    ids_train_batch = self.index_list[start:end]
+                    for id in ids_train_batch:
+                        x, y = read(id[0],id[1])
+                        mat = self.getRandomTransform(x.shape[1],x.shape[0])
+                        if len(mat)!=0 :
+                            #print(mat)
+                            #print(y)
+                            x = cv2.warpPerspective(x, mat, (x.shape[1], x.shape[0]),
+                                flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT,
+                                borderValue=(0, 0, 0))
+                            y_tmp = np.ones((3,1))
+                            y_tmp[0,0] = y[0]
+                            y_tmp[1,0] = y[1]
+                            y_tmp = np.dot(mat,y_tmp)
+                            y[0] = y_tmp[0,0]/y_tmp[2,0]
+                            y[1] = y_tmp[1,0]/y_tmp[2,0]
+                            #print(y)
+                        x_batch.append(x)
+                        y_batch.append(y)
+                    x_batch = np.array(x_batch, np.float32) / 255
+                    x_batch = x_batch[:,8:-8,16:-16,np.newaxis]
+                    y_batch = np.array(y_batch) - np.array([[16, 8]])
+                    yield x_batch, y_batch
+        return generator
 
 if __name__ == '__main__':
     i_file = 0
     cv2.namedWindow('image',cv2.WINDOW_NORMAL)
-    dg = DataGenerator([[0, x] for x in range(100,250)],1)
-    generator = dg.generator()
+    dg = DataGenerator([[0, x] for x in range(100,250)],1,
+        params = {'angle':20,'scale':0.1,'aspect':0.1,'shift':0.2})
+    generator = dg.get_generator()
     for i in range(0,100):
-        x, y = next(generator)
-        #print(x.shape)
-        #print(y.shape)
+        x, y = next(generator())
+        print(x.shape)
+        print(y.shape)
         x = x[0,:,:]
         y = y[0,:]
         #print(y)
         yi = np.round(y).astype(np.int)
-        img = cv2.circle(x,(yi[0],yi[1]),5,(255,0,0));
+        img = cv2.circle(x,(yi[0],yi[1]),5,(0,0,0));
         #print(x)
         cv2.imshow('image',img)
         cv2.waitKey(300)
