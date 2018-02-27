@@ -28,7 +28,7 @@ def data():
 
     test_files = [0]
     #train_files = [i for i in range(0,len(frames)) if i not in test_files]
-    train_files = [1]
+    train_files = [1, 2, 3]
     for i in train_files:
         for j in range(0,frames[i]):
             idx_train.append([i, j])
@@ -74,7 +74,7 @@ def create_model(idx_train, idx_test):
     model = Model(input=inputs,output=x)
     model.summary()
 
-    lr = {{choice([1E-4, 5E-5, 2E-5, 1E-5, 5E-6, 2E-6, 1E-6])}}
+    lr = {{choice([1E-4, 5E-5, 2E-5, 1E-5, 5E-6])}}
     #lr_e = {{uniform(-4,-4)}}
     print(lr)
     optim = {{choice([RMSprop, Adam, SGD])}}(lr = lr);
@@ -96,12 +96,18 @@ def create_model(idx_train, idx_test):
         params = [])
     train_steps = np.ceil(len(idx_train)/batch_size)
     test_steps = np.ceil(len(idx_test)/batch_size)
-    model.fit_generator(train_generator.get_generator()(),
-            steps_per_epoch = train_steps,
-            epochs=10, verbose=1)
-    score = model.evaluate_generator(test_generator.get_generator()(),
-            steps = test_steps)
-    print('Test score:', score)
+    try:
+        model.fit_generator(train_generator.get_generator()(),
+                steps_per_epoch = train_steps,
+                epochs=10, verbose=1)
+        score = model.evaluate_generator(test_generator.get_generator()(),
+                steps = test_steps)
+        print('Test score:', score)
+    except:
+        score = 2000
+    if np.isnan(score):
+        score = 2000
+
     return {'loss': score, 'status': STATUS_OK, 'model': model}
 
 
@@ -109,7 +115,7 @@ if __name__ == '__main__':
     best_run, best_model = optim.minimize(model=create_model,
                                           data=data,
                                           algo=tpe.suggest,
-                                          max_evals=20,
+                                          max_evals=5,
                                           trials=Trials())
     best_model.summary()
     print('Best run:', best_run)
