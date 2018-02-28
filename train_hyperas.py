@@ -120,8 +120,7 @@ def create_model(idx_train, idx_test):
         loss = 2001
     if np.isnan(score):
         score = 2000
-    reslut = {'train_loss': loss, 'test_score': score}
-    print(result)
+    print({'train_loss': loss, 'test_score': score})
 
     if score >= 2000:
         return {'loss': score, 'status': STATUS_FAIL, 'model': model}
