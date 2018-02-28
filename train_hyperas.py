@@ -82,7 +82,7 @@ def create_model(idx_train, idx_test):
     fc_dim = {{choice([32, 64, 128, 256])}}
     fc_layers = {{choice([1,2,3])}}
     for l in range(0,fc_layers):
-        x = Dense(64)(x)
+        x = Dense(fc_dim)(x)
     x = Dense(2,activation = 'linear')(x)
     model = Model(input=inputs,output=x)
     print_num_parameters(model)
