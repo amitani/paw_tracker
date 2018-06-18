@@ -114,14 +114,14 @@ def create_model(idx_train, idx_test):
 
     h = model.fit_generator(train_generator.get_generator()(),
             steps_per_epoch = train_steps,
-            epochs=n_epoch, verbose=0)
+            epochs=n_epoch, verbose=1)
     score = model.evaluate_generator(test_generator.get_generator()(),
             steps = test_steps)
 
     try:
         h = model.fit_generator(train_generator.get_generator()(),
                 steps_per_epoch = train_steps,
-                epochs=n_epoch, verbose=0)
+                epochs=n_epoch, verbose=1)
         score = model.evaluate_generator(test_generator.get_generator()(),
                 steps = test_steps)
     except :
