@@ -15,8 +15,9 @@ from hyperopt import Trials, STATUS_OK, tpe, STATUS_FAIL
 from hyperas import optim
 from hyperas.distributions import choice, uniform, conditional
 
-from data_generator import DataGenerator, frames
+from data_generator import DataGenerator, frames, validation_set, training_set
 
+import sys
 
 def data():
     """
@@ -28,8 +29,10 @@ def data():
     idx_train = []
     idx_test = []
 
-    test_files = [0]
-    train_files = [i for i in range(0,len(frames)) if i not in test_files]
+    test_files = validation_set #[0]
+    train_files = training_set #[i for i in range(0,len(frames)) if i not in test_files]
+    print(test_files)
+    print(train_files)
     #train_files = [1]
     for i in train_files:
         for j in range(0,frames[i]):
@@ -38,6 +41,8 @@ def data():
         for j in range(0,frames[i]):
             idx_test.append([i, j])
     print('prepared data')
+    print(len(idx_train))
+    print(len(idx_test))
     return idx_train, idx_test
 
 
@@ -105,14 +110,23 @@ def create_model(idx_train, idx_test):
     train_steps = np.ceil(len(idx_train)/batch_size)
     test_steps = np.ceil(len(idx_test)/batch_size)
     print(space)
-    n_epoch = {{choice([2,3,4,5])}}
+    n_epoch = {{choice([2,3,4])}}
+
+    h = model.fit_generator(train_generator.get_generator()(),
+            steps_per_epoch = train_steps,
+            epochs=n_epoch, verbose=0)
+    score = model.evaluate_generator(test_generator.get_generator()(),
+            steps = test_steps)
+
     try:
         h = model.fit_generator(train_generator.get_generator()(),
                 steps_per_epoch = train_steps,
                 epochs=n_epoch, verbose=0)
         score = model.evaluate_generator(test_generator.get_generator()(),
                 steps = test_steps)
-    except:
+    except :
+        e =sys.exc_info()[0]
+        print(e);
         score = 2001
     try:
         loss = h.history['loss'][0]

@@ -17,12 +17,41 @@ for i, fn in enumerate(sorted(glob.glob('./Aki/LeftPawManual*.mat'))):
     print(fn)
     print(frames[i])
 
+list_training = []
+with open('./list_training.txt','r') as f:
+    for line in f:
+        list_training.append(line.rstrip())
+print(list_training)
+list_validation = []
+with open('./list_validation.txt','r') as f:
+    for line in f:
+        list_validation.append(line.rstrip())
+print(list_validation)
+
+training_set = []
+validation_set = []
+names = []
+for i, fn in enumerate(sorted(glob.glob('./Aki/LeftPawManual*.mat'))):
+    name = fn[20:-4]
+    print(i)
+    print(name)
+    names.append(name)
+    if name in list_training:
+        print("  TRAINING")
+        training_set.append(i)
+    if name in list_validation:
+        print("  VALIDATION")
+        validation_set.append(i)
+
+
 size_x = 320
 size_y = 160
 depth = 1
 def read(i_file, i_frame):
     files[i_file].seek(size_x*size_y*i_frame*depth)
     x = np.fromfile(files[i_file],np.uint8, size_x*size_y)
+    if(x.size==0):
+        print(names[i_file])
     x = x.reshape((size_y,size_x))
     y = npys[i_file][i_frame,:]
     return (x,y)

@@ -11,28 +11,25 @@ for fn_mat in sorted(glob.glob('./Aki/LeftPawManual*.mat')):
     fn_npy = fn_mat[:-3]+'npy'
     fn_avi = './Aki/'+fn_mat[20:-3]+'avi'
     print(fn_avi)
-    if(os.path.isfile(fn_bin)):
-        continue
-
-
-    cap = cv2.VideoCapture(fn_avi)
-    ret, frame = cap.read()
-    cap.release()
-
-
 
     mat = scipy.io.loadmat(fn_mat)
 
     print(np.max(mat['Left_Paw'][mat['Left_Paw'][:,0]>0,:],axis=0))
     print(np.min(mat['Left_Paw'][mat['Left_Paw'][:,0]>0,:],axis=0))
+    print(np.median(mat['Left_Paw'][mat['Left_Paw'][:,0]>0,:],axis=0))
     try:
         headplate_x = np.round(mat['HeadPlatePosition']).astype(np.int)[0][0]
         headplate_y = np.round(mat['HeadPlatePosition']).astype(np.int)[0][1]
         # [y, x] in np.array
-        print((headplate_x, headplate_y))
     except:
         headplate_x = 200
         headplate_y = 16
+        print("###HeadPlatePosition Not Found")
+    print((headplate_x, headplate_y))
+
+    if(headplate_x<50):
+        print("###HeadPlatePosition Adjusting 100 pixels horizontally")
+        headplate_x = headplate_x + 100
 
     offset_x = 100
     offset_y = 80
@@ -42,12 +39,19 @@ for fn_mat in sorted(glob.glob('./Aki/LeftPawManual*.mat')):
     size_y = 160
     print((center_x-size_x//2,center_x+size_x//2))
     print((center_y-size_y//2,center_y+size_y//2))
+    
+    if(os.path.isfile(fn_bin) and os.stat(fn_bin).st_size > 0):
+        continue
+
 
     Y = mat['Left_Paw'][mat['Left_Paw'][:,0]>0,:]
     Y[:,0] = Y[:,0]-(center_x-size_x//2)
     Y[:,1] = Y[:,1]-(center_y-size_y//2)
     np.save(fn_npy,Y)
 
+    cap = cv2.VideoCapture(fn_avi)
+    ret, frame = cap.read()
+    cap.release()
     frame_count = -1
     with open(fn_bin, 'bw') as f:
         cap = cv2.VideoCapture(fn_avi)
