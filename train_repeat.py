@@ -8,6 +8,8 @@ from keras.utils import np_utils
 from keras.layers import Input, Conv2D
 from keras.optimizers import SGD, RMSprop, Adam
 from keras.applications.vgg16 import VGG16
+import keras.backend as K
+
 
 from hyperas import optim
 from hyperas.distributions import choice, uniform, conditional
@@ -15,6 +17,7 @@ from hyperas.distributions import choice, uniform, conditional
 from data_generator import DataGenerator, frames
 
 import numpy as np
+
 
 def data():
     """
@@ -83,7 +86,7 @@ def create_model(idx_train, idx_test):
     #optim = {{choice([RMSprop, Adam, SGD])}}(lr = 10**lr_e);
     optim = RMSprop(lr = 10**lr_e);
     print(optim)
-    model.compile(loss='mse', metrics=[],
+    model.compile(loss='mse', metrics=[acc15],
                   optimizer=optim)
 
     #batch_size={{choice([32, 64, 128])}}

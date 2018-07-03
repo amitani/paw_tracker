@@ -19,6 +19,8 @@ from data_generator import DataGenerator, frames, validation_set, training_set
 
 import sys
 
+def acc15(y_true, y_pred):
+    return K.mean(K.less(K.sum(K.square(y_pred - y_true),axis=1), 225), axis=-1)
 
 def data():
     """
@@ -32,6 +34,9 @@ def data():
 
     test_files = validation_set #[0]
     train_files = training_set #[i for i in range(0,len(frames)) if i not in test_files]
+    #test_files = [3]
+    #train_files = [4]
+
     print(test_files)
     print(train_files)
     #train_files = [1]
@@ -58,8 +63,6 @@ def create_model(idx_train, idx_test):
     The last one is optional, though recommended, namely:
         - model: specify the model just created so that we can later use it again.
     """
-    def acc15(y_true, y_pred):
-        return K.mean(K.less(K.sum(K.square(y_pred - y_true),axis=1), 225), axis=-1)
 
     def print_num_parameters(model):
         trainable_count = int(np.sum([K.count_params(p) for p in set(model.trainable_weights)]))
@@ -68,9 +71,9 @@ def create_model(idx_train, idx_test):
         print('Trainable params: {:,}'.format(trainable_count))
         print('Non-trainable params: {:,}'.format(non_trainable_count))
 
-    vgg = VGG16(False)
-    pop_layers = {{choice([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10])}}
-    trainable_layers = {{choice([0, 1, 2, 3, 4])}}
+    vgg = VGG16(False, input_shape = (144,288,3))
+    pop_layers = 2 # {{choice([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10])}}
+    trainable_layers = 2 #{{choice([0, 1, 2, 3, 4])}}
     for i in range(0,pop_layers):
         vgg.layers.pop()
     if trainable_layers>0:
@@ -80,80 +83,68 @@ def create_model(idx_train, idx_test):
         for layer in vgg.layers:
             layer.trainable = False
     print_num_parameters(vgg)
+    x = vgg.layers[-1].output
+    inputs = vgg.layers[0].input
+    #    inputs = Input(shape=(144,288,3))
+    #    x = inputs
+    #    x = vgg(x)
+    #    for layer in vgg.layers:
+    #        x = layer(x)
 
-    inputs = Input(shape=(144,288,3))
-    x = inputs
-    x = vgg(x)
-    conv_dim = {{choice([16, 32, 64])}}
+    conv_dim = 64#{{choice([16, 32, 64])}}
     x = Conv2D(conv_dim, (1,1))(x)
     x = Flatten()(x)
-    fc_dim = {{choice([32, 64, 128, 256])}}
-    fc_layers = {{choice([1,2,3])}}
+    fc_dim = 32#{{choice([32, 64, 128, 256])}}
+    fc_layers = 2#{{choice([1,2,3])}}
     for l in range(0,fc_layers):
         x = Dense(fc_dim)(x)
     x = Dense(2,activation = 'linear')(x)
     model = Model(input=inputs,output=x)
     print_num_parameters(model)
 
-    lr = {{choice([1E-4, 5E-5, 2E-5, 1E-5, 5E-6])}}
-    optim = {{choice([RMSprop, Adam, SGD])}}(lr = lr);
-    model.compile(loss='mse', metrics=[acc15],
-                  optimizer=optim)
+    lr = 1E-4#{{choice([1E-4, 5E-5, 2E-5, 1E-5, 5E-6])}}
+    optim = Adam(lr=lr)#{{choice([RMSprop, Adam, SGD])}}(lr = lr);
+    model.compile(loss='mse', metrics=[acc15], optimizer=optim)
+    model.summary()
 
-    batch_size={{choice([32, 64, 128])}}
-    to_aug = {{choice([True, False])}}
+    batch_size=32#{{choice([32, 64, 128])}}
+    to_aug = True#{{choice([True, False])}}
     if to_aug:
         aug_param = {'angle':10,'scale':0.05,'aspect':0.05,'shift':0.05}
     else:
         aug_param = []
     train_generator = DataGenerator(idx_train,batch_size,
         params = aug_param)
-    rg = np.random.RandomState(47)
-    rg.shuffle(idx_test)
-    del idx_test[10000:]
     test_generator = DataGenerator(idx_test,batch_size,
         params = [])
     train_steps = np.ceil(len(idx_train)/batch_size)
     test_steps = np.ceil(len(idx_test)/batch_size)
-    print(space)
-    #n_epoch = {{choice([2,3,4,5])}}
-    n_epoch = 10
+    n_epoch = 20#5#{{choice([2,3,4,5])}}
+
+    for i in range(0,n_epoch):
+        h = model.fit_generator(train_generator.get_generator()(),
+                steps_per_epoch = train_steps,
+                epochs=1, verbose=1)
+        score = model.evaluate_generator(test_generator.get_generator()(),
+                steps = test_steps)
+        print(score)
+
     try:
-        score = 1
-        for i in range(0,n_epoch):
-            h = model.fit_generator(train_generator.get_generator()(),
-                    steps_per_epoch = train_steps,
-                    epochs=1, verbose=1)
-            result = model.evaluate_generator(test_generator.get_generator()(),
-                    steps = test_steps)
-            print(result)
-            new_score = 1 - result[1] # error rate
-            if new_score < score:
-                score = new_score
-                continue
-            else:
-                break
-    except :
-        e =sys.exc_info()[0]
-        print(e);
-        score = 1
-
+        loss = h.history['loss'][-1]
+    except:
+        loss = 2001
     if np.isnan(score):
-        score = 1
+        score = 2000
+    print({'train_loss': loss, 'test_score': score})
 
-    if score >= 0 and score < 1:
-        return {'loss': score, 'status': STATUS_OK, 'model': model}
+    if score >= 2000:
+        return  score, STATUS_FAIL, model
     else:
-        return {'loss': score, 'status': STATUS_FAIL, 'model': model}
+        return  score, STATUS_OK, model
 
 if __name__ == '__main__':
-    best_run, best_model, best_space = optim.minimize(model=create_model,
-        data=data,
-        algo=tpe.suggest,
-        max_evals=50,
-        return_space = True,
-        trials=Trials())
+    idx_train, idx_test = data()
+    score, status, best_model = create_model(idx_train, idx_test)
     best_model.summary()
-    print(best_space)
-    print('Best run:', best_run)
-    best_model.save('best_model.h5')
+    print('valid_loss:', score)
+    best_model.save('best_model_180701.h5')
